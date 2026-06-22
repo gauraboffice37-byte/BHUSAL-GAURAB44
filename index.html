@@ -1,0 +1,108 @@
+from zipfile import ZipFile
+import os, textwrap, json, pathlib
+
+base = "/mnt/data/hill_climb_game"
+os.makedirs(base, exist_ok=True)
+
+index_html = r"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Nepali Hill Climb Game</title>
+<style>
+body { margin:0; font-family:Arial; background:#cfefff; text-align:center; }
+canvas { background:linear-gradient(#7ec850,#4a9c2e); display:block; margin:0 auto; }
+.controls { position:fixed; bottom:20px; width:100%; }
+button { font-size:20px; padding:15px 25px; margin:10px; }
+#ads { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; align-items:center; justify-content:center; flex-direction:column; }
+</style>
+</head>
+<body>
+
+<h2>🚗 Nepali Hill Climb Game (Demo)</h2>
+<canvas id="game" width="900" height="400"></canvas>
+
+<div class="controls">
+<button onclick="accel()">⛽ Accelerator</button>
+<button onclick="brake()">🛑 Brake</button>
+</div>
+
+<div id="ads">
+<h1>📢 Advertisement</h1>
+<p>Your Ad Here (simulate ads after level finish)</p>
+<button onclick="closeAd()">Close</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let car = {x:50, y:200, vx:0};
+let accelPower = 0;
+let brakePower = 0;
+let time = 0;
+
+function terrain(x){
+  return 250 + Math.sin(x*0.01)*50 + Math.sin(x*0.005)*30;
+}
+
+function draw(){
+  ctx.clearRect(0,0,900,400);
+
+  // ground
+  ctx.beginPath();
+  for(let x=0;x<900;x++){
+    ctx.lineTo(x, terrain(x));
+  }
+  ctx.strokeStyle="green";
+  ctx.stroke();
+
+  // car
+  car.vx += accelPower - brakePower;
+  car.vx *= 0.98;
+  car.x += car.vx;
+  car.y = terrain(car.x) - 20;
+
+  ctx.fillStyle="red";
+  ctx.fillRect(car.x, car.y, 40, 20);
+
+  // finish condition
+  if(car.x > 800){
+    showAd();
+    car.x = 50;
+    car.vx = 0;
+  }
+
+  requestAnimationFrame(draw);
+}
+
+function accel(){ accelPower = 0.2; brakePower = 0; }
+function brake(){ brakePower = 0.3; accelPower = 0; }
+
+function showAd(){
+  document.getElementById("ads").style.display="flex";
+}
+
+function closeAd(){
+  document.getElementById("ads").style.display="none";
+}
+
+draw();
+</script>
+
+</body>
+</html>
+"""
+
+with open(os.path.join(base, "index.html"), "w", encoding="utf-8") as f:
+    f.write(index_html)
+
+zip_path = "/mnt/data/Nepali_Hill_Climb_Game.zip"
+with ZipFile(zip_path, "w") as z:
+    for root, dirs, files in os.walk(base):
+        for file in files:
+            full = os.path.join(root, file)
+            z.write(full, arcname=file)
+
+zip_path
